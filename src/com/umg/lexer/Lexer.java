@@ -10,7 +10,7 @@ import static com.umg.lexer.Token.Tipos;
 public class Lexer {
 
     public static void main(String[] args) {
-        String input = "int a = 0; for ( int i = 0 ; i <= 5 ; i ++ ) { }";
+        String input = "int a = 0 ; for ( int i = 0 ; i <= 5 ; i ++ ) { }";
         ArrayList<Token> tokens = lex(input);
         for (Token token : tokens) {
             System.out.println("(" + token.getTipo() + ": " + token.getValor() + ")");

@@ -3,15 +3,23 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.umg.compiladores.sistema;
+package org.marlonaguirre.compiladores.core;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Reader;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.marlonaguirre.compiladores.core.Lexer;
+import org.marlonaguirre.compiladores.core.Tokens;
+import org.marlonaguirre.compiladores.core.frmPrincipal;
 
 /**
  *
@@ -35,11 +43,11 @@ public class Main extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jScrollPane1 = new javax.swing.JScrollPane();
-        jTable1 = new javax.swing.JTable();
         jScrollPane2 = new javax.swing.JScrollPane();
         txtPane = new javax.swing.JTextPane();
         lblTexto = new javax.swing.JLabel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        txtResultado = new javax.swing.JTextPane();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
@@ -47,24 +55,11 @@ public class Main extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null},
-                {null, null},
-                {null, null},
-                {null, null}
-            },
-            new String [] {
-                "Lexema", "Token"
-            }
-        ));
-        jScrollPane1.setViewportView(jTable1);
-
         txtPane.addInputMethodListener(new java.awt.event.InputMethodListener() {
-            public void caretPositionChanged(java.awt.event.InputMethodEvent evt) {
-            }
             public void inputMethodTextChanged(java.awt.event.InputMethodEvent evt) {
                 txtPaneInputMethodTextChanged(evt);
+            }
+            public void caretPositionChanged(java.awt.event.InputMethodEvent evt) {
             }
         });
         txtPane.addKeyListener(new java.awt.event.KeyAdapter() {
@@ -73,6 +68,8 @@ public class Main extends javax.swing.JFrame {
             }
         });
         jScrollPane2.setViewportView(txtPane);
+
+        jScrollPane3.setViewportView(txtResultado);
 
         jMenu1.setText("Archivo");
 
@@ -98,11 +95,11 @@ public class Main extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addGap(40, 40, 40)
                 .addComponent(lblTexto, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(353, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 553, Short.MAX_VALUE)
+                    .addComponent(jScrollPane3)
                     .addComponent(jScrollPane2))
                 .addGap(26, 26, 26))
         );
@@ -113,9 +110,9 @@ public class Main extends javax.swing.JFrame {
                 .addComponent(lblTexto, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 7, Short.MAX_VALUE)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 250, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(30, 30, 30)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 92, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+                .addGap(18, 18, 18)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 93, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(17, 17, 17))
         );
 
         pack();
@@ -141,27 +138,62 @@ public class Main extends javax.swing.JFrame {
     private String abrirArchivo() {
         String aux = "";
         String texto = "";
-        try {
+        JFileChooser file = new JFileChooser();
+        file.showOpenDialog(this);
+        File abre = file.getSelectedFile();
+        if (abre != null) {
+            FileReader archivos;
+            try {
+                archivos = new FileReader(abre);
 
-            JFileChooser file = new JFileChooser();
-            file.showOpenDialog(this);
-
-            File abre = file.getSelectedFile();
-
-            if (abre != null) {
-                FileReader archivos = new FileReader(abre);
                 BufferedReader lee = new BufferedReader(archivos);
+                int lineas = 1;
                 while ((aux = lee.readLine()) != null) {
-                    texto += aux + "\n";
-                    compararToken(aux);
+                    texto += lineas + " " + aux + "\n";
+                    //compararToken(aux);
+                    lineas++;
                 }
-                lee.close();
+            } catch (IOException ex) {
+                Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
             }
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(null, ex + ""
-                    + "\nNo se ha encontrado el archivo",
-                    "ADVERTENCIA!!!", JOptionPane.WARNING_MESSAGE);
+
         }
+        try {
+            Reader lector = new BufferedReader(new FileReader(abre));
+            Lexer lexer = new Lexer(lector);
+
+            String resultado = "";
+            
+            while (true) {
+               
+                Tokens tokens = lexer.yylex();
+                
+
+                if (tokens == null) {
+                    resultado += "FIN";
+                    txtResultado.setText(resultado);
+                    break;
+                }
+                switch (tokens) {
+                    case ERROR:
+                        resultado += "Simbolo no definido \n";
+                        break;
+                    case Identificador:
+                    case Numero:
+                    case Reservadas:
+                        resultado += lexer.yystate()+ lexer.lexeme + ": Es un " + tokens + "\n";
+                        break;
+                    default:
+                        resultado += "Token: " + tokens + "\n";
+                        break;
+                }
+            }
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(frmPrincipal.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(frmPrincipal.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
         return texto;//El texto se almacena en el JTextArea
     }
 
@@ -221,10 +253,10 @@ public class Main extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JMenuItem jMenuItem1;
-    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JTable jTable1;
+    private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JLabel lblTexto;
     private javax.swing.JTextPane txtPane;
+    private javax.swing.JTextPane txtResultado;
     // End of variables declaration//GEN-END:variables
 }
